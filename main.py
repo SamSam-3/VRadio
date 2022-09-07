@@ -13,6 +13,16 @@ bot = commands.Bot(intents=intents,command_prefix='#')
 def indent(req):
     print(json.dumps(req, indent=4))
     
+def formatChannel(req,i):
+
+    channel = req.json()['hits']['hits'][i]
+    infos = channel['_source']
+
+    return ('--------[ {} ]--------'.format(i)+'\n'
+        +'Langue : '+infos['code']+'\n'
+        +'Location : '+infos['subtitle']+'\n'
+        +'Titre : '+infos['title']+'\n'
+        +'Lien : '+infos['url']+'\n')
 
 @bot.event
 async def on_ready():
@@ -25,30 +35,23 @@ async def choice(message):
 @bot.command()
 async def search(ctx, *args):
 
+    passphrase = ""
+
     req = requests.get("http://radio.garden/api/search?q={}".format(args[0]))
     n= len(req.json()['hits']['hits'])
-    passphrase = ""
 
     if(n>0):
         for i in range(n):
+            passphrase+=formatChannel(req,i)
 
-            channel = req.json()['hits']['hits'][i]
-            infos = channel['_source']
-
-            passphrase+=('--------[ {} ]--------'.format(i)+'\n'
-                +'Langue : '+infos['code']+'\n'
-                +'Location : '+infos['subtitle']+'\n'
-                +'Titre : '+infos['title']+'\n'
-                +'Lien : '+infos['url']+'\n')
-
-        await ctx.send(passphrase)
-
+        await ctx.send(passphrase+"\nSelect the number of your choice !")
+        
         msg = await bot.wait_for("message",check=choice, timeout=60.0)
-        print(msg.content)
+
+        req.json()['hits']['hits'][int(msg.content)]['_source']['title']
 
     else:
         ctx.send("Aucune chaine a ce nom n'existe. Essayez en une autre")
     
 
-#bot token : MTAxNjY3NDY4MzAzNjM4NTM4Mg.GUAUHC.GM3WdBtMU89Rp7s5Ngosjbp-jeGmaVVtDsYFh4
-bot.run("MTAxNjY3NDY4MzAzNjM4NTM4Mg.GUAUHC.GM3WdBtMU89Rp7s5Ngosjbp-jeGmaVVtDsYFh4")
+bot.run("")
